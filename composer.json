@@ -1,5 +1,5 @@
 {
-  "name" : "orkestra/transactor",
+  "name" : "pocomos/transactor",
   "description" : "Offers support for interacting with different financial transaction processing platforms",
   "license" : "MIT",
   "require" : {
