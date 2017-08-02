@@ -40,6 +40,22 @@ abstract class AbstractAccount extends AbstractEntity
      */
     protected $accountNumber = '';
 
+
+    /**
+     * @var string
+     *
+     * @ORM\Column(name="account_token", type="string")
+     */
+    protected $accountToken = '';
+
+
+    /**
+     * @var \DateTime $dateModified
+     *
+     * @ORM\Column(name="date_tokenized", type="datetime", nullable=true)
+     */
+    protected $dateTokenized;
+
     /**
      * @var string
      *
@@ -163,6 +179,8 @@ abstract class AbstractAccount extends AbstractEntity
     {
         return (string) ($this->alias ?: sprintf('%s ending with %s', $this->getType(), $this->lastFour));
     }
+
+
 
     /**
      * Return a printable type name
@@ -467,4 +485,37 @@ abstract class AbstractAccount extends AbstractEntity
     {
         return $this->lastFour;
     }
+
+    /**
+     * @return string
+     */
+    public function getAccountToken()
+    {
+        return $this->accountToken;
+    }
+
+    /**
+     * @param string $accountToken
+     */
+    public function setAccountToken($accountToken)
+    {
+        $this->accountToken = $accountToken;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getDateTokenized()
+    {
+        return $this->dateTokenized;
+    }
+
+    /**
+     * @param \DateTime $dateTokenized
+     */
+    public function setDateTokenized(\DateTime $dateTokenized)
+    {
+        $this->dateTokenized = $dateTokenized;
+    }
+
 }
