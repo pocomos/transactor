@@ -11,6 +11,7 @@
 
 namespace Orkestra\Transactor\Transactor\NetworkMerchants;
 
+use Doctrine\ORM\EntityManager;
 use Orkestra\Transactor\Entity\Account\SwipedCardAccount;
 use Orkestra\Transactor\AbstractTransactor;
 use Orkestra\Transactor\Entity\Credentials;
@@ -53,13 +54,22 @@ class CardTransactor extends AbstractTransactor
     private $client;
 
     /**
+     * @var EntityManager
+     */
+    private $em;
+
+
+    /**
      * Constructor
      *
      * @param \Guzzle\Http\Client $client
+     * @param EntityManager $em
      */
-    public function __construct(Client $client = null)
+    public function __construct(Client $client = null, EntityManager $em)
     {
         $this->client = $client;
+        $this->em = $em;
+
     }
 
     /**
@@ -305,6 +315,10 @@ class CardTransactor extends AbstractTransactor
         ));
 
         return $credentials;
+    }
+
+    private function tokenizeCard(CardAccount $account){
+
     }
 
     /**
