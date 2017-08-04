@@ -59,4 +59,9 @@ class TransactionType extends Enum
      * An transaction that updates the parent transaction
      */
     const UPDATE = 'Update';
+
+    /**
+     * An transaction that updates the parent transaction
+     */
+    const VALIDATE = 'Validate';
 }

@@ -63,6 +63,10 @@ abstract class AbstractTransactor implements TransactorInterface
 
         try {
             $options = $this->getResolver()->resolve($options);
+            $account = $transaction->getAccount();
+            if(!$account->getAccountToken()){
+                $this->tokenizeAccount($account,$options);
+            }
 
             $this->doTransact($transaction, $options);
         } catch (\Exception $e) {

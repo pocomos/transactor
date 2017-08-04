@@ -26,13 +26,14 @@ use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 /**
  * Credit card transactor for the Network Merchants payment processing gateway
  */
-class CardTransactor extends AbstractTransactor
+class TokenTransactor extends AbstractTransactor
 {
     /**
      * @var array
      */
     protected static $supportedNetworks = array(
-        Transaction\NetworkType::CARD
+        Transaction\NetworkType::CARD,
+        Transaction\NetworkType::SWIPED
     );
 
     /**
@@ -45,7 +46,6 @@ class CardTransactor extends AbstractTransactor
         Transaction\TransactionType::CREDIT,
         Transaction\TransactionType::REFUND,
         Transaction\TransactionType::VOID,
-        Transaction\TransactionType::CAPTURE,
     );
 
     /**
@@ -71,26 +71,13 @@ class CardTransactor extends AbstractTransactor
         $this->em = $em;
     }
 
+    /**
+     * @param Transaction $transaction
+     * @param array $options
+     */
     public function tokenizeAccount(Transaction $transaction,array $options = []){
-        $TokenizingTransactionn = new Transaction();
-        $TokenizingTransactionn->setAccount($transaction->getAccount());
-        $TokenizingTransactionn->setAmount(0);
-        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::Vali));
-        $TokenizingTransactionn->setNetwork($transaction->getNetwork());
+//        Do nothing. This should be removed in the end. It's all bullshit bro.
 
-        $result = $this->doTransact($TokenizingTransactionn,$options);
-        $BadJoJo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
-        if(in_array($result->getStatus(),$BadJoJo)){
-            return $result;
-        }
-        $data = $result->getData('data');
-        $transaction->getAccount()->setAccountToken($data['customer_vault_id']);
-        $transaction->getAccount()->setDateTokenized(new \DateTime());
-        $this->em->persist($transaction);
-        $this->em->persist($transaction->getAccount());
-        $this->em->flush();
-
-        return $this->doTransact($transaction,$options);
 
     }
     /**
@@ -204,8 +191,6 @@ class CardTransactor extends AbstractTransactor
                 return 'refund';
             case Transaction\TransactionType::VOID:
                 return 'void';
-            case Transaction\TransactionType::VALIDATE:
-                return 'validate';
         }
     }
 
@@ -236,32 +221,39 @@ class CardTransactor extends AbstractTransactor
         } else {
             $account = $transaction->getAccount();
 
-            $params = array_merge($params, array(
-                'ccnumber' => $account->getAccountNumber(),
-                'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
-            ));
-
-            if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
-                $params['cvv'] = $account->getCvv();
-            }
-
-            if (isset($options['enable_avs']) && true === $options['enable_avs']) {
-                $names = explode(' ', $account->getName(), 2);
-                $firstName = isset($names[0]) ? $names[0] : '';
-                $lastName = isset($names[1]) ? $names[1] : '';
-
+            if ($account instanceof SwipedCardAccount) {
                 $params = array_merge($params, array(
-                    'firstname' => $firstName,
-                    'lastname' => $lastName,
-                    'address' => $account->getAddress(),
-                    'city' => $account->getCity(),
-                    'state' => $account->getRegion(),
-                    'zip' => $account->getPostalCode(),
-                    'country' => $account->getCountry(),
-                    'ipaddress' => $account->getIpAddress()
+                    'track_1' => $account->getTrackOne(),
+                    'track_2' => $account->getTrackTwo(),
+                    'track_3' => $account->getTrackThree()
                 ));
-            }
+            } else {
+                $params = array_merge($params, array(
+                    'ccnumber' => $account->getAccountNumber(),
+                    'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
+                ));
 
+                if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
+                    $params['cvv'] = $account->getCvv();
+                }
+
+                if (isset($options['enable_avs']) && true === $options['enable_avs']) {
+                    $names = explode(' ', $account->getName(), 2);
+                    $firstName = isset($names[0]) ? $names[0] : '';
+                    $lastName = isset($names[1]) ? $names[1] : '';
+
+                    $params = array_merge($params, array(
+                        'firstname' => $firstName,
+                        'lastname' => $lastName,
+                        'address' => $account->getAddress(),
+                        'city' => $account->getCity(),
+                        'state' => $account->getRegion(),
+                        'zip' => $account->getPostalCode(),
+                        'country' => $account->getCountry(),
+                        'ipaddress' => $account->getIpAddress()
+                    ));
+                }
+            }
         }
 
         if ($transaction->getType()->getValue() != Transaction\TransactionType::VOID) {
@@ -286,9 +278,9 @@ class CardTransactor extends AbstractTransactor
                 $request[$key] = '[filtered]';
             }
         }
-
+        
         $result->setData('request', $request);
-
+        
         return $result;
     }
 

@@ -70,4 +70,13 @@ interface TransactorInterface
      * @return \Orkestra\Transactor\Entity\Credentials
      */
     public function createCredentials();
-}
+
+    /**
+     * Tokenizes the account.
+     * @param Transaction $transaction
+     * @param array $params
+     * @param array $options
+     * @return mixed
+     */
+    public function tokenizeAccount(Transaction $transaction,array $options = []);
+    }
