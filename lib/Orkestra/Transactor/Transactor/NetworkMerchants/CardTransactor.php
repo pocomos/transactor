@@ -71,30 +71,6 @@ class CardTransactor extends AbstractTransactor
         $this->em = $em;
     }
 
-//    /**
-//     * @param Transaction $transaction
-//     * @param array $options
-//     */
-//    public function tokenizeAccount(Transaction $transaction,array $options = [])
-//    {
-//        $TokenizingTransactionn = new Transaction();
-//        $TokenizingTransactionn->setAccount($transaction->getAccount());
-//        $TokenizingTransactionn->setAmount(0);
-//        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
-//        $TokenizingTransactionn->setNetwork($transaction->getNetwork());
-//
-//        $result = $this->doTransact($TokenizingTransactionn,$options);
-//        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
-//        if(in_array($result->getStatus(),$BadJooJoo)){
-//            return $result;
-//        }
-//        $data = $result->getData('data');
-//        $transaction->getAccount()->setAccountToken($data['customer_vault_id']);
-//        $transaction->getAccount()->setDateTokenized(new \DateTime());
-//        $this->em->persist($transaction);
-//        $this->em->persist($transaction->getAccount());
-//        $this->em->flush();
-//    }
     /**
      * Transacts the given transaction
      *
@@ -236,12 +212,18 @@ class CardTransactor extends AbstractTransactor
                 'transactionid' => $transaction->getParent()->getResult()->getExternalId(),
             ));
         } else {
+            /** @var CardAccount $account */
             $account = $transaction->getAccount();
+            if($options['tokenize']){
+                $params['customer_vault'] = "add_customer";
+                $params = array_merge($params, array(
+                    'ccnumber' => $account->getAccountNumber(),
+                    'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
+                ));
+            } else {
+                $params['customer_vault_id'] = $account->getAccountToken();
+            }
 
-            $params = array_merge($params, array(
-                'ccnumber' => $account->getAccountNumber(),
-                'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
-            ));
 
             if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
                 $params['cvv'] = $account->getCvv();
@@ -300,6 +282,7 @@ class CardTransactor extends AbstractTransactor
     protected function configureResolver(OptionsResolverInterface $resolver)
     {
         $resolver->setDefaults(array(
+            'tokenize' => false,
             'enable_avs' => false,
             'enable_cvv' => false,
             'post_url'   => 'https://secure.bottomlinegateway.com/api/transact.php',

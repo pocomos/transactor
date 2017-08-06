@@ -148,6 +148,7 @@ class AchTransactor extends CardTransactor
     protected function configureResolver(OptionsResolverInterface $resolver)
     {
         $resolver->setDefaults(array(
+            'tokenize' => false,
             'post_url'   => 'https://secure.bottomlinegateway.com/api/transact.php',
         ));
     }

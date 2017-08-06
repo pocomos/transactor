@@ -85,25 +85,27 @@ abstract class AbstractTransactor implements TransactorInterface
      * @return Result
      */
     public function tokenizeAccount(Transaction $transaction,array $options = []){
-        $TokenizingTransactionn = new Transaction();
-        $TokenizingTransactionn->setAccount($transaction->getAccount());
-        $TokenizingTransactionn->setAmount(0);
-        $TokenizingTransactionn->setCredentials($transaction->getCredentials());
-        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
-        $TokenizingTransactionn->setNetwork($transaction->getNetwork());
+        $TokenizingTransaction = new Transaction();
+        $TokenizingTransaction->setAccount($transaction->getAccount());
+        $TokenizingTransaction->setAmount(0);
+        $TokenizingTransaction->setCredentials($transaction->getCredentials());
+        $TokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
+        $TokenizingTransaction->setNetwork($transaction->getNetwork());
 
-        $result = $this->doTransact($TokenizingTransactionn,$options);
+        $options['tokenize']=true;
+
+        $result = $this->doTransact($TokenizingTransaction,$options);
         $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
         if(in_array($result->getStatus(),$BadJooJoo)){
             return $result;
         }
         $data = $result->getData('data');
-        $transaction->getAccount()->setAccountToken($data['customer_vault_id']);
-        $transaction->getAccount()->setDateTokenized(new \DateTime());
-        $this->em->persist($transaction);
-        $this->em->persist($transaction->getAccount());
+        $TokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
+        $TokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
+        $this->em->persist($TokenizingTransaction);
+        $this->em->persist($TokenizingTransaction->getAccount());
         $this->em->flush();
-
+        $options['tokenize']=false;
         return $this->doTransact($transaction,$options);
 
     }
