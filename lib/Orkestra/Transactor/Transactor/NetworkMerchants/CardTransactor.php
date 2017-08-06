@@ -51,12 +51,12 @@ class CardTransactor extends AbstractTransactor
     /**
      * @var \Guzzle\Http\Client
      */
-    private $client;
+    protected $client;
 
     /**
      * @var EntityManager
      */
-    private $em;
+    protected $em;
 
 
     /**
@@ -71,30 +71,30 @@ class CardTransactor extends AbstractTransactor
         $this->em = $em;
     }
 
-    /**
-     * @param Transaction $transaction
-     * @param array $options
-     */
-    public function tokenizeAccount(Transaction $transaction,array $options = [])
-    {
-        $TokenizingTransactionn = new Transaction();
-        $TokenizingTransactionn->setAccount($transaction->getAccount());
-        $TokenizingTransactionn->setAmount(0);
-        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
-        $TokenizingTransactionn->setNetwork($transaction->getNetwork());
-
-        $result = $this->doTransact($TokenizingTransactionn,$options);
-        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
-        if(in_array($result->getStatus(),$BadJooJoo)){
-            return $result;
-        }
-        $data = $result->getData('data');
-        $transaction->getAccount()->setAccountToken($data['customer_vault_id']);
-        $transaction->getAccount()->setDateTokenized(new \DateTime());
-        $this->em->persist($transaction);
-        $this->em->persist($transaction->getAccount());
-        $this->em->flush();
-    }
+//    /**
+//     * @param Transaction $transaction
+//     * @param array $options
+//     */
+//    public function tokenizeAccount(Transaction $transaction,array $options = [])
+//    {
+//        $TokenizingTransactionn = new Transaction();
+//        $TokenizingTransactionn->setAccount($transaction->getAccount());
+//        $TokenizingTransactionn->setAmount(0);
+//        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
+//        $TokenizingTransactionn->setNetwork($transaction->getNetwork());
+//
+//        $result = $this->doTransact($TokenizingTransactionn,$options);
+//        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
+//        if(in_array($result->getStatus(),$BadJooJoo)){
+//            return $result;
+//        }
+//        $data = $result->getData('data');
+//        $transaction->getAccount()->setAccountToken($data['customer_vault_id']);
+//        $transaction->getAccount()->setDateTokenized(new \DateTime());
+//        $this->em->persist($transaction);
+//        $this->em->persist($transaction->getAccount());
+//        $this->em->flush();
+//    }
     /**
      * Transacts the given transaction
      *
