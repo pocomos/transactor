@@ -79,8 +79,8 @@ class CardTransactor extends AbstractTransactor
         $TokenizingTransactionn->setNetwork($transaction->getNetwork());
 
         $result = $this->doTransact($TokenizingTransactionn,$options);
-        $BadJoJo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
-        if(in_array($result->getStatus(),$BadJoJo)){
+        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
+        if(in_array($result->getStatus(),$BadJooJoo)){
             return $result;
         }
         $data = $result->getData('data');
