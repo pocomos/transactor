@@ -88,6 +88,7 @@ abstract class AbstractTransactor implements TransactorInterface
         $TokenizingTransactionn = new Transaction();
         $TokenizingTransactionn->setAccount($transaction->getAccount());
         $TokenizingTransactionn->setAmount(0);
+        $TokenizingTransactionn->setCredentials($transaction->getCredentials());
         $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
         $TokenizingTransactionn->setNetwork($transaction->getNetwork());
 
