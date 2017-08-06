@@ -65,7 +65,7 @@ abstract class AbstractTransactor implements TransactorInterface
             $options = $this->getResolver()->resolve($options);
             $account = $transaction->getAccount();
             if(!$account->getAccountToken()){
-                $this->tokenizeAccount($account,$options);
+                $this->tokenizeAccount($transaction,$options);
             }
 
             $this->doTransact($transaction, $options);
@@ -77,6 +77,34 @@ abstract class AbstractTransactor implements TransactorInterface
         }
 
         return $this->filterResult($result);
+    }
+
+    /**
+     * @param Transaction $transaction
+     * @param array $options
+     * @return Result
+     */
+    public function tokenizeAccount(Transaction $transaction,array $options = []){
+        $TokenizingTransactionn = new Transaction();
+        $TokenizingTransactionn->setAccount($transaction->getAccount());
+        $TokenizingTransactionn->setAmount(0);
+        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
+        $TokenizingTransactionn->setNetwork($transaction->getNetwork());
+
+        $result = $this->doTransact($TokenizingTransactionn,$options);
+        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
+        if(in_array($result->getStatus(),$BadJooJoo)){
+            return $result;
+        }
+        $data = $result->getData('data');
+        $transaction->getAccount()->setAccountToken($data['customer_vault_id']);
+        $transaction->getAccount()->setDateTokenized(new \DateTime());
+        $this->em->persist($transaction);
+        $this->em->persist($transaction->getAccount());
+        $this->em->flush();
+
+        return $this->doTransact($transaction,$options);
+
     }
 
     /**

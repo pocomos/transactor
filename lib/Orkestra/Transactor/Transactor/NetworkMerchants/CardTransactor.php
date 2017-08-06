@@ -71,11 +71,16 @@ class CardTransactor extends AbstractTransactor
         $this->em = $em;
     }
 
-    public function tokenizeAccount(Transaction $transaction,array $options = []){
+    /**
+     * @param Transaction $transaction
+     * @param array $options
+     */
+    public function tokenizeAccount(Transaction $transaction,array $options = [])
+    {
         $TokenizingTransactionn = new Transaction();
         $TokenizingTransactionn->setAccount($transaction->getAccount());
         $TokenizingTransactionn->setAmount(0);
-        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::Vali));
+        $TokenizingTransactionn->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
         $TokenizingTransactionn->setNetwork($transaction->getNetwork());
 
         $result = $this->doTransact($TokenizingTransactionn,$options);
@@ -89,9 +94,6 @@ class CardTransactor extends AbstractTransactor
         $this->em->persist($transaction);
         $this->em->persist($transaction->getAccount());
         $this->em->flush();
-
-        return $this->doTransact($transaction,$options);
-
     }
     /**
      * Transacts the given transaction

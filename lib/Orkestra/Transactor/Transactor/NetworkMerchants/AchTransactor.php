@@ -11,6 +11,7 @@
 
 namespace Orkestra\Transactor\Transactor\NetworkMerchants;
 
+use Doctrine\ORM\EntityManager;
 use Guzzle\Http\Client;
 use Guzzle\Http\Exception\BadResponseException;
 use Orkestra\Transactor\AbstractTransactor;
@@ -39,8 +40,10 @@ class AchTransactor extends CardTransactor
      */
     protected static $supportedTypes = array(
         Transaction\TransactionType::SALE,
-        Transaction\TransactionType::REFUND
+        Transaction\TransactionType::REFUND,
+        Transaction\TransactionType::VALIDATE,
     );
+
 
     /**
      * Validates the given transaction
@@ -52,7 +55,7 @@ class AchTransactor extends CardTransactor
     protected function validateTransaction(Transaction $transaction)
     {
         if (!$transaction->getParent() && in_array($transaction->getType()->getValue(), array(
-            Transaction\TransactionType::REFUND))
+                Transaction\TransactionType::REFUND))
         ) {
             throw ValidationException::parentTransactionRequired();
         }
@@ -137,6 +140,7 @@ class AchTransactor extends CardTransactor
 
         return $params;
     }
+
 
     /**
      * @param \Symfony\Component\OptionsResolver\OptionsResolverInterface $resolver

@@ -39,6 +39,10 @@ class GenericTransactor extends AbstractTransactor
         Transaction\TransactionType::REFUND,
     );
 
+    /**
+     * @param Transaction $transaction
+     * @param array $options
+     */
     public function tokenizeAccount(Transaction $transaction,array $options = []){
         //Do nothing
     }
