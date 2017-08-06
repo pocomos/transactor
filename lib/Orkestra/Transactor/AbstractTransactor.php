@@ -99,7 +99,7 @@ abstract class AbstractTransactor implements TransactorInterface
         if(in_array($result->getStatus(),$BadJooJoo)){
             return $result;
         }
-        $data = $result->getData('data');
+        $data = $result->getData('response');
         $TokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
         $TokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
         $this->em->persist($TokenizingTransaction);
