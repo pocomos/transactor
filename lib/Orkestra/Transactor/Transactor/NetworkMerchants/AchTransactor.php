@@ -111,31 +111,37 @@ class AchTransactor extends CardTransactor
             $names = explode(' ', $account->getName(), 2);
             $firstName = isset($names[0]) ? $names[0] : '';
             $lastName = isset($names[1]) ? $names[1] : '';
+            $params['amount'] = $transaction->getAmount();
+            if($options['tokenize']){
+                $params['customer_vault'] = "add_customer";
+                $params = array_merge($params, array(
+                    'firstname' => $firstName,
+                    'lastname' => $lastName,
+                    'address' => $account->getAddress(),
+                    'city' => $account->getCity(),
+                    'state' => $account->getRegion(),
+                    'zip' => $account->getPostalCode(),
+                    'country' => $account->getCountry(),
+                    'ipaddress' => $account->getIpAddress(),
+                    'amount' => $transaction->getAmount(),
+                    'payment' => 'check',
+                    'sec_code' => $credentials->getCredential('secCode') ?: 'WEB',
+                    'account_holder_type' => in_array($account->getAccountType()->getValue(), array(
+                        AccountType::PERSONAL_SAVINGS,
+                        AccountType::PERSONAL_CHECKING
+                    )) ? 'personal' : 'business',
+                    'account_type' => in_array($transaction->getAccount()->getAccountType()->getValue(), array(
+                        AccountType::PERSONAL_SAVINGS,
+                        AccountType::BUSINESS_SAVINGS
+                    )) ? 'savings' : 'checking',
+                    'checkname' => $account->getName(),
+                    'checkaba' => $account->getRoutingNumber(),
+                    'checkaccount' => $account->getAccountNumber()
+                ));
+            } else {
+                $params['customer_vault_id'] = $account->getAccountToken();
+            }
 
-            $params = array_merge($params, array(
-                'firstname' => $firstName,
-                'lastname' => $lastName,
-                'address' => $account->getAddress(),
-                'city' => $account->getCity(),
-                'state' => $account->getRegion(),
-                'zip' => $account->getPostalCode(),
-                'country' => $account->getCountry(),
-                'ipaddress' => $account->getIpAddress(),
-                'payment' => 'check',
-                'sec_code' => $credentials->getCredential('secCode') ?: 'WEB',
-                'account_holder_type' => in_array($account->getAccountType()->getValue(), array(
-                    AccountType::PERSONAL_SAVINGS,
-                    AccountType::PERSONAL_CHECKING
-                )) ? 'personal' : 'business',
-                'account_type' => in_array($transaction->getAccount()->getAccountType()->getValue(), array(
-                    AccountType::PERSONAL_SAVINGS,
-                    AccountType::BUSINESS_SAVINGS
-                )) ? 'savings' : 'checking',
-                'amount' => $transaction->getAmount(),
-                'checkname' => $account->getName(),
-                'checkaba' => $account->getRoutingNumber(),
-                'checkaccount' => $account->getAccountNumber()
-            ));
         }
 
         return $params;
