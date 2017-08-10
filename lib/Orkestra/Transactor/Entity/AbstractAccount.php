@@ -29,6 +29,7 @@ use Orkestra\Common\Entity\AbstractEntity;
  *   "SimpleAccount"              = "Orkestra\Transactor\Entity\Account\SimpleAccount",
  *   "SwipedCardAccount"          = "Orkestra\Transactor\Entity\Account\SwipedCardAccount",
  *   "EncryptedSwipedCardAccount" = "Orkestra\Transactor\Entity\Account\EncryptedSwipedCardAccount"
+ *   "TokenAccount"               = "Orkestra\Transactor\Entity\Account\TokenAccount"
  * })
  */
 abstract class AbstractAccount extends AbstractEntity

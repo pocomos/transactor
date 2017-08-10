@@ -107,12 +107,10 @@ class AchTransactor extends CardTransactor
             ));
         } else {
             $account = $transaction->getAccount();
-
-            $names = explode(' ', $account->getName(), 2);
-            $firstName = isset($names[0]) ? $names[0] : '';
-            $lastName = isset($names[1]) ? $names[1] : '';
-            $params['amount'] = $transaction->getAmount();
             if($options['tokenize']){
+                $names = explode(' ', $account->getName(), 2);
+                $firstName = isset($names[0]) ? $names[0] : '';
+                $lastName = isset($names[1]) ? $names[1] : '';
                 $params['customer_vault'] = "add_customer";
                 $params = array_merge($params, array(
                     'firstname' => $firstName,
@@ -140,6 +138,9 @@ class AchTransactor extends CardTransactor
                 ));
             } else {
                 $params['customer_vault_id'] = $account->getAccountToken();
+                $params['type']= $this->getNmiType($transaction);
+                $params['amount'] = $transaction->getAmount();
+
             }
 
         }
