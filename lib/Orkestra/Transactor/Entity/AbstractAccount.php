@@ -51,13 +51,6 @@ abstract class AbstractAccount extends AbstractEntity
 
 
     /**
-     * @var \DateTime $dateModified
-     *
-     * @ORM\Column(name="date_tokenized", type="datetime", nullable=true)
-     */
-    protected $dateTokenized;
-
-    /**
      * @var string
      *
      * @ORM\Column(name="last_four", type="string")

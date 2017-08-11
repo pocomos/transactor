@@ -32,8 +32,7 @@ class TokenTransactor extends AbstractTransactor
      * @var array
      */
     protected static $supportedNetworks = array(
-        Transaction\NetworkType::CARD,
-        Transaction\NetworkType::SWIPED
+        Transaction\NetworkType::TOKEN
     );
 
     /**
@@ -71,15 +70,6 @@ class TokenTransactor extends AbstractTransactor
         $this->em = $em;
     }
 
-    /**
-     * @param Transaction $transaction
-     * @param array $options
-     */
-    public function tokenizeAccount(Transaction $transaction,array $options = []){
-//        Do nothing. This should be removed in the end. It's all bullshit bro.
-
-
-    }
     /**
      * Transacts the given transaction
      *

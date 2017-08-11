@@ -318,10 +318,6 @@ class CardTransactor extends AbstractTransactor
         return $credentials;
     }
 
-    private function tokenizeCard(CardAccount $account){
-
-    }
-
     /**
      * Returns the internally used type of this Transactor
      *

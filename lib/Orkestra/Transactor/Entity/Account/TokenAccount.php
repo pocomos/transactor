@@ -22,86 +22,30 @@ use Orkestra\Transactor\Type\Year;
  *
  * @ORM\Entity
  */
-class CardAccount extends AbstractAccount
+class TokenAccount extends AbstractAccount
 {
-    /**
-     * @var \Orkestra\Transactor\Type\Month
-     *
-     * @ORM\Column(name="card_exp_month", type="orkestra.month", length=2, nullable=true)
-     */
-    protected $expMonth;
 
     /**
-     * @var \Orkestra\Transactor\Type\Year
-     * @ORM\Column(name="card_exp_year", type="orkestra.year", length=4, nullable=true)
+     * @var \DateTime $dateModified
+     *
+     * @ORM\Column(name="date_tokenized", type="datetime", nullable=true)
      */
-    protected $expYear;
+    protected $dateTokenized;
 
     /**
-     * @var string
-     *
-     * @ORM\Column(name="card_cvv", type="string", length=4, nullable=true)
+     * @return \DateTime
      */
-    protected $cvv;
-
-    /**
-     * Sets the expiration month
-     *
-     * @param \Orkestra\Transactor\Type\Month $expMonth
-     */
-    public function setExpMonth(Month $expMonth)
+    public function getDateTokenized()
     {
-        $this->expMonth = $expMonth;
+        return $this->dateTokenized;
     }
 
     /**
-     * Gets the expiration month
-     *
-     * @return \Orkestra\Transactor\Type\Month
+     * @param \DateTime $dateTokenized
      */
-    public function getExpMonth()
+    public function setDateTokenized(\DateTime $dateTokenized)
     {
-        return $this->expMonth;
-    }
-
-    /**
-     * Sets the expiration year
-     *
-     * @param \Orkestra\Transactor\Type\Year $expYear
-     */
-    public function setExpYear(Year $expYear)
-    {
-        $this->expYear = $expYear;
-    }
-
-    /**
-     * Gets the expiration year
-     *
-     * @return \Orkestra\Transactor\Type\Year
-     */
-    public function getExpYear()
-    {
-        return $this->expYear;
-    }
-
-    /**
-     * Sets the security code
-     *
-     * @param string $cvv
-     */
-    public function setCvv($cvv)
-    {
-        $this->cvv = $cvv;
-    }
-
-    /**
-     * Gets the security code
-     *
-     * @return string
-     */
-    public function getCvv()
-    {
-        return $this->cvv;
+        $this->dateTokenized = $dateTokenized;
     }
 
     /**
@@ -111,6 +55,6 @@ class CardAccount extends AbstractAccount
      */
     public function getType()
     {
-        return 'Credit Card';
+        return 'Token Account';
     }
 }

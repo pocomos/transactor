@@ -54,4 +54,9 @@ class NetworkType extends Enum
      * A point transaction
      */
     const POINTS = 'Points';
+
+    /**
+     * A tokenized CC/ACH acc transaction
+     */
+    const TOKEN = 'Token';
 }
