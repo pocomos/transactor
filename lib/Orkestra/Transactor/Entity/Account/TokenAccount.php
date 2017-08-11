@@ -22,7 +22,7 @@ use Orkestra\Transactor\Type\Year;
  *
  * @ORM\Entity
  */
-class CardAccount extends AbstractAccount
+class TokenAccount extends AbstractAccount
 {
     /**
      * @var \Orkestra\Transactor\Type\Month
