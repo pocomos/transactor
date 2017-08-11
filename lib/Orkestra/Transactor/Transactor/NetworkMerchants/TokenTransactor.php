@@ -14,6 +14,7 @@ namespace Orkestra\Transactor\Transactor\NetworkMerchants;
 use Doctrine\ORM\EntityManager;
 use Orkestra\Transactor\Entity\Account\SwipedCardAccount;
 use Orkestra\Transactor\AbstractTransactor;
+use Orkestra\Transactor\Entity\Account\TokenAccount;
 use Orkestra\Transactor\Entity\Credentials;
 use Orkestra\Transactor\Entity\Transaction;
 use Orkestra\Transactor\Entity\Result;
@@ -137,7 +138,7 @@ class TokenTransactor extends AbstractTransactor
 
         if (!$credentials) {
             throw ValidationException::missingCredentials();
-        } elseif (null === $credentials->getCredential('username') || null === $credentials->getCredential('password')) {
+        } elseif ($credentials->getCredential('username') === null ||   $credentials->getCredential('password') === null) {
             throw ValidationException::missingRequiredParameter('username or password');
         }
 
@@ -147,18 +148,12 @@ class TokenTransactor extends AbstractTransactor
             throw ValidationException::missingAccountInformation();
         }
 
-        if ((!($account instanceof CardAccount) && !($account instanceof SwipedCardAccount))
-            || (!($account instanceof SwipedCardAccount) && $transaction->getNetwork() == Transaction\NetworkType::SWIPED)
-        ) {
+        if (!$account instanceof TokenAccount) {
             throw ValidationException::invalidAccountType($account);
         }
 
-        if (!$account instanceof SwipedCardAccount) {
-            if (null === $account->getAccountNumber()) {
-                throw ValidationException::missingRequiredParameter('account number');
-            } elseif (null === $account->getExpMonth() || null === $account->getExpYear()) {
-                throw ValidationException::missingRequiredParameter('card expiration');
-            }
+        if ($account->getAccountToken() === null) {
+            throw ValidationException::missingRequiredParameter('account token');
         }
     }
 
@@ -193,12 +188,14 @@ class TokenTransactor extends AbstractTransactor
     protected function buildParams(Transaction $transaction, array $options = array())
     {
         $credentials = $transaction->getCredentials();
+        $account = $transaction->getAccount();
 
         $params = array(
             'type' => $this->getNmiType($transaction),
             'username' => $credentials->getCredential('username'),
             'password' => $credentials->getCredential('password'),
         );
+        $params['customer_vault_id'] = $account->getAccountToken();
 
         if (in_array($transaction->getType()->getValue(), array(
             Transaction\TransactionType::CAPTURE,
@@ -208,42 +205,6 @@ class TokenTransactor extends AbstractTransactor
             $params = array_merge($params, array(
                 'transactionid' => $transaction->getParent()->getResult()->getExternalId(),
             ));
-        } else {
-            $account = $transaction->getAccount();
-
-            if ($account instanceof SwipedCardAccount) {
-                $params = array_merge($params, array(
-                    'track_1' => $account->getTrackOne(),
-                    'track_2' => $account->getTrackTwo(),
-                    'track_3' => $account->getTrackThree()
-                ));
-            } else {
-                $params = array_merge($params, array(
-                    'ccnumber' => $account->getAccountNumber(),
-                    'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
-                ));
-
-                if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
-                    $params['cvv'] = $account->getCvv();
-                }
-
-                if (isset($options['enable_avs']) && true === $options['enable_avs']) {
-                    $names = explode(' ', $account->getName(), 2);
-                    $firstName = isset($names[0]) ? $names[0] : '';
-                    $lastName = isset($names[1]) ? $names[1] : '';
-
-                    $params = array_merge($params, array(
-                        'firstname' => $firstName,
-                        'lastname' => $lastName,
-                        'address' => $account->getAddress(),
-                        'city' => $account->getCity(),
-                        'state' => $account->getRegion(),
-                        'zip' => $account->getPostalCode(),
-                        'country' => $account->getCountry(),
-                        'ipaddress' => $account->getIpAddress()
-                    ));
-                }
-            }
         }
 
         if ($transaction->getType()->getValue() != Transaction\TransactionType::VOID) {
@@ -268,9 +229,9 @@ class TokenTransactor extends AbstractTransactor
                 $request[$key] = '[filtered]';
             }
         }
-        
+
         $result->setData('request', $request);
-        
+
         return $result;
     }
 
@@ -280,8 +241,6 @@ class TokenTransactor extends AbstractTransactor
     protected function configureResolver(OptionsResolverInterface $resolver)
     {
         $resolver->setDefaults(array(
-            'enable_avs' => false,
-            'enable_cvv' => false,
             'post_url'   => 'https://secure.bottomlinegateway.com/api/transact.php',
         ));
     }
@@ -315,10 +274,6 @@ class TokenTransactor extends AbstractTransactor
         return $credentials;
     }
 
-    private function tokenizeCard(CardAccount $account){
-
-    }
-
     /**
      * Returns the internally used type of this Transactor
      *
@@ -336,6 +291,6 @@ class TokenTransactor extends AbstractTransactor
      */
     public function getName()
     {
-        return 'Network Merchants Credit Card Gateway';
+        return 'Network Merchants Token Gateway';
     }
 }

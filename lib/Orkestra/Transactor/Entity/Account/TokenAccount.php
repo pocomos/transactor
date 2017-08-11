@@ -24,7 +24,6 @@ use Orkestra\Transactor\Type\Year;
  */
 class TokenAccount extends AbstractAccount
 {
-
     /**
      * @var \DateTime $dateModified
      *
