@@ -12,6 +12,7 @@
 namespace Orkestra\Transactor\Tokenization\NetworkMerchants;
 
 use Doctrine\ORM\EntityManager;
+use Orkestra\Transactor\Entity\AbstractAccount;
 use Orkestra\Transactor\Entity\Account\SwipedCardAccount;
 use Orkestra\Transactor\AbstractTransactor;
 use Orkestra\Transactor\Entity\Credentials;
@@ -32,32 +33,25 @@ class Tokenizer extends AbstractTransactor
      * @var array
      */
     protected static $supportedNetworks = array(
-        Transaction\NetworkType::CARD,
-        Transaction\NetworkType::SWIPED
+        Transaction\NetworkType::CARD
     );
 
     /**
      * @var array
      */
     protected static $supportedTypes = array(
-        Transaction\TransactionType::SALE,
-        Transaction\TransactionType::AUTH,
-        Transaction\TransactionType::CAPTURE,
-        Transaction\TransactionType::CREDIT,
-        Transaction\TransactionType::REFUND,
-        Transaction\TransactionType::VOID,
+        Transaction\TransactionType::VALIDATE
     );
 
     /**
      * @var \Guzzle\Http\Client
      */
-    private $client;
+    protected $client;
 
     /**
      * @var EntityManager
      */
-    private $em;
-
+    protected $em;
 
     /**
      * Constructor
@@ -69,16 +63,40 @@ class Tokenizer extends AbstractTransactor
     {
         $this->client = $client;
         $this->em = $em;
-
     }
 
-
-
-    public function tokenizeAccount(Transaction $transaction,array $params = [],array $options){
-
-    }
 
     /**
+     * @param AbstractAccount $account
+     * @param array $options
+     * @return Result
+     */
+    public function tokenizeAccount(AbstractAccount $account,Transaction\NetworkType $networkType,array $options = [])
+    {
+        $TokenizingTransaction = new Transaction();
+        $TokenizingTransaction->setAccount($account);
+        $TokenizingTransaction->setAmount(0);
+        $TokenizingTransaction->setCredentials($account->getCredentials());
+        $TokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
+        $TokenizingTransaction->setNetwork($networkType);
+        $TokenizingTransaction->setStatus(Result\ResultStatus::PENDING);
+
+        $options['tokenize'] = true;
+
+        $result = $this->doTransact($TokenizingTransaction, $options);
+        $BadJooJoo = [Result\ResultStatus::DECLINED, Result\ResultStatus::ERROR];
+        if (in_array($result->getStatus(), $BadJooJoo)) {
+            return $result;
+        }
+        $data = $result->getData('response');
+        $TokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
+        $TokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
+
+        $options['tokenize'] = false;
+        return $this->doTransact($TokenizingTransaction, $options);
+    }
+
+        /**
      * Transacts the given transaction
      *
      * @param \Orkestra\Transactor\Entity\Transaction $transaction
@@ -92,17 +110,7 @@ class Tokenizer extends AbstractTransactor
         $params = $this->buildParams($transaction, $options);
         $result = $transaction->getResult();
         $result->setTransactor($this);
-        if(!$transaction->getAccount()->getAccountToken()){
-            try {
-                $this->tokenizeAccount($transaction,$params,$options);
-            } catch (BadResponseException $e) {
-                $data = array(
-                    'response' => '3',
-                    'message' => $e->getMessage()
-                );
-                $this->handleResponse($result,$data);
-            }
-        }
+
         $postUrl = $options['post_url'];
         $client = $this->getClient();
 
@@ -139,24 +147,6 @@ class Tokenizer extends AbstractTransactor
     }
 
     /**
-     * @param Result $result
-     * @param array $data
-     */
-    protected function handleResponse(Result $result,array $data){
-        if (empty($data['response']) || '1' != $data['response']) {
-            $result->setStatus(new Result\ResultStatus((!empty($data['response']) && '2' == $data['response']) ? Result\ResultStatus::DECLINED : Result\ResultStatus::ERROR));
-            $result->setMessage(empty($data['responsetext']) ? 'An error occurred while processing the payment. Please try again.' : $data['responsetext']);
-
-            if (!empty($data['transactionid'])) {
-                $result->setExternalId($data['transactionid']);
-            }
-        } else {
-            $result->setStatus(new Result\ResultStatus(Result\ResultStatus::APPROVED));
-            $result->setExternalId($data['transactionid']);
-        }
-    }
-
-    /**
      * Validates the given transaction
      *
      * @param \Orkestra\Transactor\Entity\Transaction $transaction
@@ -165,9 +155,7 @@ class Tokenizer extends AbstractTransactor
      */
     protected function validateTransaction(Transaction $transaction)
     {
-        if (!$transaction->getParent() && in_array($transaction->getType()->getValue(), array(Transaction\TransactionType::CAPTURE, Transaction\TransactionType::REFUND, Transaction\TransactionType::VOID))) {
-            throw ValidationException::parentTransactionRequired();
-        }
+
 
         $credentials = $transaction->getCredentials();
 
@@ -183,8 +171,7 @@ class Tokenizer extends AbstractTransactor
             throw ValidationException::missingAccountInformation();
         }
 
-        if ((!($account instanceof CardAccount) && !($account instanceof SwipedCardAccount))
-            || (!($account instanceof SwipedCardAccount) && $transaction->getNetwork() == Transaction\NetworkType::SWIPED)
+        if (!($account instanceof CardAccount )
         ) {
             throw ValidationException::invalidAccountType($account);
         }
@@ -217,6 +204,8 @@ class Tokenizer extends AbstractTransactor
                 return 'refund';
             case Transaction\TransactionType::VOID:
                 return 'void';
+            case Transaction\TransactionType::VALIDATE:
+                return 'validate';
         }
     }
 
@@ -245,41 +234,40 @@ class Tokenizer extends AbstractTransactor
                 'transactionid' => $transaction->getParent()->getResult()->getExternalId(),
             ));
         } else {
+            /** @var CardAccount $account */
             $account = $transaction->getAccount();
-
-            if ($account instanceof SwipedCardAccount) {
-                $params = array_merge($params, array(
-                    'track_1' => $account->getTrackOne(),
-                    'track_2' => $account->getTrackTwo(),
-                    'track_3' => $account->getTrackThree()
-                ));
-            } else {
+            if($options['tokenize']){
+                $params['customer_vault'] = "add_customer";
                 $params = array_merge($params, array(
                     'ccnumber' => $account->getAccountNumber(),
                     'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
                 ));
-
-                if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
-                    $params['cvv'] = $account->getCvv();
-                }
-
-                if (isset($options['enable_avs']) && true === $options['enable_avs']) {
-                    $names = explode(' ', $account->getName(), 2);
-                    $firstName = isset($names[0]) ? $names[0] : '';
-                    $lastName = isset($names[1]) ? $names[1] : '';
-
-                    $params = array_merge($params, array(
-                        'firstname' => $firstName,
-                        'lastname' => $lastName,
-                        'address' => $account->getAddress(),
-                        'city' => $account->getCity(),
-                        'state' => $account->getRegion(),
-                        'zip' => $account->getPostalCode(),
-                        'country' => $account->getCountry(),
-                        'ipaddress' => $account->getIpAddress()
-                    ));
-                }
+            } else {
+                $params['customer_vault_id'] = $account->getAccountToken();
             }
+
+
+            if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
+                $params['cvv'] = $account->getCvv();
+            }
+
+            if (isset($options['enable_avs']) && true === $options['enable_avs']) {
+                $names = explode(' ', $account->getName(), 2);
+                $firstName = isset($names[0]) ? $names[0] : '';
+                $lastName = isset($names[1]) ? $names[1] : '';
+
+                $params = array_merge($params, array(
+                    'firstname' => $firstName,
+                    'lastname' => $lastName,
+                    'address' => $account->getAddress(),
+                    'city' => $account->getCity(),
+                    'state' => $account->getRegion(),
+                    'zip' => $account->getPostalCode(),
+                    'country' => $account->getCountry(),
+                    'ipaddress' => $account->getIpAddress()
+                ));
+            }
+
         }
 
         if ($transaction->getType()->getValue() != Transaction\TransactionType::VOID) {
@@ -316,6 +304,7 @@ class Tokenizer extends AbstractTransactor
     protected function configureResolver(OptionsResolverInterface $resolver)
     {
         $resolver->setDefaults(array(
+            'tokenize' => false,
             'enable_avs' => false,
             'enable_cvv' => false,
             'post_url'   => 'https://secure.bottomlinegateway.com/api/transact.php',
@@ -349,10 +338,6 @@ class Tokenizer extends AbstractTransactor
         ));
 
         return $credentials;
-    }
-
-    private function tokenizeCard(CardAccount $account){
-
     }
 
     /**

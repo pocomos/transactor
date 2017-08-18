@@ -14,6 +14,7 @@ namespace Orkestra\Transactor\Entity\Account;
 use Doctrine\ORM\Mapping as ORM;
 
 use Orkestra\Transactor\Entity\AbstractAccount;
+use Orkestra\Transactor\Entity\Account\BankAccount\AccountType;
 use Orkestra\Transactor\Type\Month;
 use Orkestra\Transactor\Type\Year;
 
@@ -22,29 +23,60 @@ use Orkestra\Transactor\Type\Year;
  *
  * @ORM\Entity
  */
-class TokenAccount extends AbstractAccount
+class TokenAccount extends CardAccount
 {
     /**
-     * @var \DateTime $dateModified
+     * @var string
      *
-     * @ORM\Column(name="date_tokenized", type="datetime", nullable=true)
+     * @ORM\Column(name="ach_routing_number", type="string", nullable=true)
      */
-    protected $dateTokenized;
+    protected $routingNumber;
 
     /**
-     * @return \DateTime
+     * @var Orkestra\Transactor\Entity\Account\BankAccount\AccountType
+     *
+     * @ORM\Column(name="account_type", type="enum.orkestra.bank_account_type", nullable=true)
      */
-    public function getDateTokenized()
+    protected $accountType;
+
+    /**
+     * Gets the routing number
+     *
+     * @return string $routingNumber
+     */
+    public function getRoutingNumber()
     {
-        return $this->dateTokenized;
+        return $this->routingNumber;
     }
 
     /**
-     * @param \DateTime $dateTokenized
+     * Sets the routing number
+     *
+     * @param string $routingNumber
      */
-    public function setDateTokenized(\DateTime $dateTokenized)
+    public function setRoutingNumber($routingNumber)
     {
-        $this->dateTokenized = $dateTokenized;
+        $this->routingNumber = $routingNumber;
+    }
+
+    /**
+     * Gets the account type
+     *
+     * @return Orkestra\Transactor\Entity\Account\BankAccount\AccountType $accountType
+     */
+    public function getAccountType()
+    {
+        return $this->accountType;
+    }
+
+    /**
+     * Sets the account type
+     *
+     * @param Orkestra\Transactor\Entity\Account\BankAccount\AccountType $accountType
+     */
+    public function setAccountType(AccountType $accountType)
+    {
+        $this->accountType = $accountType;
     }
 
     /**
