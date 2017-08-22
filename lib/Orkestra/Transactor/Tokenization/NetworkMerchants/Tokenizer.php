@@ -87,9 +87,9 @@ class Tokenizer extends AbstractTransactor
         $accountType = $account->getType();
         $options = $this->getResolver()->resolve($options);
         if($accountType === "Bank Account"){
-            $networkType = 'ACH';
+            $networkType = Transaction\NetworkType::ACH;
         } elseif($accountType === "Credit Card"){
-            $networkType = 'Card';
+            $networkType = Transaction\NetworkType::CARD;
         } else {
             throw new Exception('Account Type is missing');
         }
