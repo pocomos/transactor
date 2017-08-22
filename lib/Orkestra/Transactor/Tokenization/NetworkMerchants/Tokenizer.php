@@ -30,7 +30,7 @@ use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 /**
  * Credit card transactor for the Network Merchants payment processing gateway
  */
-class Tokenizer extends AbstractTransactor
+class Tokenizer extends AchTransactor
 {
     /**
      * @var array
@@ -131,7 +131,7 @@ class Tokenizer extends AbstractTransactor
         $accountType = $transaction->getAccount()->getType();
         if($accountType === "Bank Account"){
             $params = $this->achTransactor->buildParams($transaction, $options);
-        } elseif($accountType === "Card Account"){
+        } elseif($accountType === "Credit Card"){
             $params = $this->cardTransactor->buildParams($transaction, $options);
         } else {
             throw new Exception('Account of undefined type. Please provide a bank account or a card account');
