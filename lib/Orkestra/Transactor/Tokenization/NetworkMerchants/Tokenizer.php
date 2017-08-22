@@ -87,9 +87,9 @@ class Tokenizer extends AbstractTransactor
         $accountType = $account->getType();
         $options = $this->getResolver()->resolve($options);
         if($accountType === "Bank Account"){
-            $networkType = Transaction\NetworkType::ACH;
+            $networkType = new Transaction\NetworkType(Transaction\NetworkType::ACH);
         } elseif($accountType === "Credit Card"){
-            $networkType = Transaction\NetworkType::CARD;
+            $networkType = new Transaction\NetworkType(Transaction\NetworkType::CARD);
         } else {
             throw new Exception('Account Type is missing');
         }
@@ -101,7 +101,7 @@ class Tokenizer extends AbstractTransactor
         $tokenizingTransaction->setCredentials($account->getCredentials());
         $tokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
         $tokenizingTransaction->setNetwork($networkType);
-        $tokenizingTransaction->setStatus(Result\ResultStatus::PENDING);
+        $tokenizingTransaction->setStatus(new Result\ResultStatus(Result\ResultStatus::PENDING));
 
         $options['tokenize'] = true;
 
