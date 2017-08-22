@@ -80,7 +80,7 @@ class Tokenizer extends AbstractTransactor
     /**
      * @param AbstractAccount $account
      * @param array $options
-     * @return Result
+     * @return AbstractAccount $account
      */
     public function tokenizeAccount(AbstractAccount $account,array $options = [])
     {
