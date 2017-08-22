@@ -36,7 +36,8 @@ class Tokenizer extends AbstractTransactor
      * @var array
      */
     protected static $supportedNetworks = array(
-        Transaction\NetworkType::CARD
+        Transaction\NetworkType::CARD,
+        Transaction\NetworkType::ACH,
     );
 
     /**
@@ -81,8 +82,19 @@ class Tokenizer extends AbstractTransactor
      * @param array $options
      * @return Result
      */
-    public function tokenizeAccount(AbstractAccount $account,Transaction\NetworkType $networkType,array $options = [])
+    public function tokenizeAccount(AbstractAccount $account,array $options = [])
     {
+        $accountType = $account->getType();
+
+        if($accountType === "Bank Account"){
+            $networkType = 'ACH';
+        } elseif($accountType === "Card Account"){
+            $networkType = 'Card';
+        } else {
+            throw new Exception('Account Type is missing');
+        }
+
+
         $tokenizingTransaction = new Transaction();
         $tokenizingTransaction->setAccount($account);
         $tokenizingTransaction->setAmount(0);
@@ -105,7 +117,7 @@ class Tokenizer extends AbstractTransactor
         return $account;
     }
 
-        /**
+    /**
      * Transacts the given transaction
      *
      * @param \Orkestra\Transactor\Entity\Transaction $transaction
