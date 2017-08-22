@@ -103,9 +103,6 @@ abstract class AbstractTransactor implements TransactorInterface
         $data = $result->getData('response');
         $TokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
         $TokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
-        $this->em->persist($TokenizingTransaction);
-        $this->em->persist($TokenizingTransaction->getAccount());
-        $this->em->flush();
         $options['tokenize']=false;
         return $this->doTransact($transaction,$options);
 

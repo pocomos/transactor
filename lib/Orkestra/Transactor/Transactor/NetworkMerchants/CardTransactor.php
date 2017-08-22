@@ -53,22 +53,15 @@ class CardTransactor extends AbstractTransactor
      */
     protected $client;
 
-    /**
-     * @var EntityManager
-     */
-    protected $em;
-
 
     /**
      * Constructor
      *
      * @param \Guzzle\Http\Client $client
-     * @param EntityManager $em
      */
-    public function __construct(Client $client = null, EntityManager $em)
+    public function __construct(Client $client = null)
     {
         $this->client = $client;
-        $this->em = $em;
     }
 
     /**

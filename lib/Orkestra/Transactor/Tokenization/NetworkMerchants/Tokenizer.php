@@ -12,6 +12,7 @@
 namespace Orkestra\Transactor\Tokenization\NetworkMerchants;
 
 use Doctrine\ORM\EntityManager;
+use Orkestra\Common\Exception\Exception;
 use Orkestra\Transactor\Entity\AbstractAccount;
 use Orkestra\Transactor\Entity\Account\SwipedCardAccount;
 use Orkestra\Transactor\AbstractTransactor;
@@ -22,6 +23,8 @@ use Orkestra\Transactor\Entity\Account\CardAccount;
 use Orkestra\Transactor\Exception\ValidationException;
 use Guzzle\Http\Client;
 use Guzzle\Http\Exception\BadResponseException;
+use Orkestra\Transactor\Transactor\NetworkMerchants\AchTransactor;
+use Orkestra\Transactor\Transactor\NetworkMerchants\CardTransactor;
 use Symfony\Component\OptionsResolver\OptionsResolverInterface;
 
 /**
@@ -49,20 +52,27 @@ class Tokenizer extends AbstractTransactor
     protected $client;
 
     /**
-     * @var EntityManager
+     * @var CardTransactor
      */
-    protected $em;
+    protected $cardTransactor;
+
+    /**
+     * @var AchTransactor
+     */
+    protected $achTransactor;
 
     /**
      * Constructor
      *
      * @param \Guzzle\Http\Client $client
-     * @param EntityManager $em
+     * @param CardTransactor $cardTransactor
+     * @param AchTransactor $achTransactor
      */
-    public function __construct(Client $client = null, EntityManager $em)
+    public function __construct(Client $client = null, CardTransactor $cardTransactor, AchTransactor $achTransactor)
     {
         $this->client = $client;
-        $this->em = $em;
+        $this->cardTransactor = $cardTransactor;
+        $this->achTransactor = $achTransactor;
     }
 
 
@@ -73,27 +83,26 @@ class Tokenizer extends AbstractTransactor
      */
     public function tokenizeAccount(AbstractAccount $account,Transaction\NetworkType $networkType,array $options = [])
     {
-        $TokenizingTransaction = new Transaction();
-        $TokenizingTransaction->setAccount($account);
-        $TokenizingTransaction->setAmount(0);
-        $TokenizingTransaction->setCredentials($account->getCredentials());
-        $TokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
-        $TokenizingTransaction->setNetwork($networkType);
-        $TokenizingTransaction->setStatus(Result\ResultStatus::PENDING);
+        $tokenizingTransaction = new Transaction();
+        $tokenizingTransaction->setAccount($account);
+        $tokenizingTransaction->setAmount(0);
+        $tokenizingTransaction->setCredentials($account->getCredentials());
+        $tokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
+        $tokenizingTransaction->setNetwork($networkType);
+        $tokenizingTransaction->setStatus(Result\ResultStatus::PENDING);
 
         $options['tokenize'] = true;
 
-        $result = $this->doTransact($TokenizingTransaction, $options);
+        $result = $this->doTransact($tokenizingTransaction, $options);
         $BadJooJoo = [Result\ResultStatus::DECLINED, Result\ResultStatus::ERROR];
         if (in_array($result->getStatus(), $BadJooJoo)) {
             return $result;
         }
         $data = $result->getData('response');
-        $TokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
-        $TokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
+        $account->setAccountToken($data['customer_vault_id']);
+        $account->setDateTokenized(new \DateTime());
 
-        $options['tokenize'] = false;
-        return $this->doTransact($TokenizingTransaction, $options);
+        return $account;
     }
 
         /**
@@ -107,7 +116,14 @@ class Tokenizer extends AbstractTransactor
     protected function doTransact(Transaction $transaction, array $options = array())
     {
         $this->validateTransaction($transaction);
-        $params = $this->buildParams($transaction, $options);
+        $accountType = $transaction->getAccount()->getType();
+        if($accountType === "Bank Account"){
+            $params = $this->achTransactor->buildParams($transaction, $options);
+        } elseif($accountType === "Card Account"){
+            $params = $this->cardTransactor->buildParams($transaction, $options);
+        } else {
+            throw new Exception('Account of undefined type. Please provide a bank account or a card account');
+        }
         $result = $transaction->getResult();
         $result->setTransactor($this);
 
@@ -155,8 +171,6 @@ class Tokenizer extends AbstractTransactor
      */
     protected function validateTransaction(Transaction $transaction)
     {
-
-
         $credentials = $transaction->getCredentials();
 
         if (!$credentials) {
@@ -183,98 +197,6 @@ class Tokenizer extends AbstractTransactor
                 throw ValidationException::missingRequiredParameter('card expiration');
             }
         }
-    }
-
-    /**
-     * @param  \Orkestra\Transactor\Entity\Transaction $transaction
-     * @return string
-     */
-    protected function getNmiType(Transaction $transaction)
-    {
-        switch ($transaction->getType()->getValue()) {
-            case Transaction\TransactionType::SALE:
-                return 'sale';
-            case Transaction\TransactionType::AUTH:
-                return 'auth';
-            case Transaction\TransactionType::CAPTURE:
-                return 'capture';
-            case Transaction\TransactionType::CREDIT:
-                return 'credit';
-            case Transaction\TransactionType::REFUND:
-                return 'refund';
-            case Transaction\TransactionType::VOID:
-                return 'void';
-            case Transaction\TransactionType::VALIDATE:
-                return 'validate';
-        }
-    }
-
-    /**
-     * @param \Orkestra\Transactor\Entity\Transaction $transaction
-     * @param array                                   $options
-     *
-     * @return array
-     */
-    protected function buildParams(Transaction $transaction, array $options = array())
-    {
-        $credentials = $transaction->getCredentials();
-
-        $params = array(
-            'type' => $this->getNmiType($transaction),
-            'username' => $credentials->getCredential('username'),
-            'password' => $credentials->getCredential('password'),
-        );
-
-        if (in_array($transaction->getType()->getValue(), array(
-            Transaction\TransactionType::CAPTURE,
-            Transaction\TransactionType::REFUND,
-            Transaction\TransactionType::VOID))
-        ) {
-            $params = array_merge($params, array(
-                'transactionid' => $transaction->getParent()->getResult()->getExternalId(),
-            ));
-        } else {
-            /** @var CardAccount $account */
-            $account = $transaction->getAccount();
-            if($options['tokenize']){
-                $params['customer_vault'] = "add_customer";
-                $params = array_merge($params, array(
-                    'ccnumber' => $account->getAccountNumber(),
-                    'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
-                ));
-            } else {
-                $params['customer_vault_id'] = $account->getAccountToken();
-            }
-
-
-            if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
-                $params['cvv'] = $account->getCvv();
-            }
-
-            if (isset($options['enable_avs']) && true === $options['enable_avs']) {
-                $names = explode(' ', $account->getName(), 2);
-                $firstName = isset($names[0]) ? $names[0] : '';
-                $lastName = isset($names[1]) ? $names[1] : '';
-
-                $params = array_merge($params, array(
-                    'firstname' => $firstName,
-                    'lastname' => $lastName,
-                    'address' => $account->getAddress(),
-                    'city' => $account->getCity(),
-                    'state' => $account->getRegion(),
-                    'zip' => $account->getPostalCode(),
-                    'country' => $account->getCountry(),
-                    'ipaddress' => $account->getIpAddress()
-                ));
-            }
-
-        }
-
-        if ($transaction->getType()->getValue() != Transaction\TransactionType::VOID) {
-            $params['amount'] = $transaction->getAmount();
-        }
-
-        return $params;
     }
 
     /**
