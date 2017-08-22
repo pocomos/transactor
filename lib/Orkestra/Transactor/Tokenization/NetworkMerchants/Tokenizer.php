@@ -85,7 +85,7 @@ class Tokenizer extends AbstractTransactor
     public function tokenizeAccount(AbstractAccount $account,array $options = [])
     {
         $accountType = $account->getType();
-
+        $options = $this->getResolver()->resolve($options);
         if($accountType === "Bank Account"){
             $networkType = 'ACH';
         } elseif($accountType === "Card Account"){

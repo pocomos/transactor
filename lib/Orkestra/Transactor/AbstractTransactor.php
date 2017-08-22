@@ -150,7 +150,7 @@ abstract class AbstractTransactor implements TransactorInterface
     /**
      * @return \Symfony\Component\OptionsResolver\OptionsResolverInterface
      */
-    private function getResolver()
+    protected function getResolver()
     {
         if (null === $this->resolver) {
             $this->resolver = new OptionsResolver();
