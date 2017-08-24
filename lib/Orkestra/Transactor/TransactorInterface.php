@@ -11,6 +11,7 @@
 
 namespace Orkestra\Transactor;
 
+use Orkestra\Transactor\Entity\AbstractAccount;
 use Orkestra\Transactor\Entity\Transaction;
 
 /**
@@ -70,4 +71,14 @@ interface TransactorInterface
      * @return \Orkestra\Transactor\Entity\Credentials
      */
     public function createCredentials();
+
+    /**
+     * Transacts a transaction and returns the result
+     *
+     * @abstract
+     * @param  AbstractAccount $account
+     * @param  array                                   $options
+     * @return array
+     */
+    public function tokenizeAccount(AbstractAccount $account, array $options = array());
     }

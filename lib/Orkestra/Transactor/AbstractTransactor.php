@@ -90,7 +90,6 @@ abstract class AbstractTransactor implements TransactorInterface
     public function tokenizeAccount(AbstractAccount $account,array $options = []){
         $options = $this->getResolver()->resolve($options);
 
-
         $tokenizingTransaction = new Transaction();
         $tokenizingTransaction->setAccount($account);
         $tokenizingTransaction->setAmount(0);
