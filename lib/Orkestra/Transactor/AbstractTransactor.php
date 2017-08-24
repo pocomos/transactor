@@ -85,7 +85,8 @@ abstract class AbstractTransactor implements TransactorInterface
     /**
      * @param AbstractAccount $account
      * @param array $options
-     * @return Result
+     * @return array
+     * @throws \Exception
      */
     public function tokenizeAccount(AbstractAccount $account,array $options = []){
         $options = $this->getResolver()->resolve($options);
