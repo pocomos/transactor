@@ -11,6 +11,9 @@
 
 namespace Orkestra\Transactor;
 
+use Orkestra\Transactor\Entity\AbstractAccount;
+use Orkestra\Transactor\Entity\Account\BankAccount;
+use Orkestra\Transactor\Entity\Account\CardAccount;
 use Orkestra\Transactor\Entity\Result\ResultStatus;
 use Orkestra\Transactor\Entity\Result;
 use Orkestra\Transactor\Entity\Transaction;
@@ -62,11 +65,11 @@ abstract class AbstractTransactor implements TransactorInterface
         $result->setTransactor($this);
 
         try {
-            $options = $this->getResolver()->resolve($options);
-            $account = $transaction->getAccount();
-            if(!$account->getAccountToken()){
-                $this->tokenizeAccount($transaction,$options);
-            }
+//            $options = $this->getResolver()->resolve($options);
+//            $account = $transaction->getAccount();
+//            if(!$account->getAccountToken()){
+//                $this->tokenizeAccount($transaction,$options);
+//            }
 
             $this->doTransact($transaction, $options);
         } catch (\Exception $e) {
@@ -80,31 +83,45 @@ abstract class AbstractTransactor implements TransactorInterface
     }
 
     /**
-     * @param Transaction $transaction
+     * @param AbstractAccount $account
      * @param array $options
      * @return Result
      */
-    public function tokenizeAccount(Transaction $transaction,array $options = []){
-        $TokenizingTransaction = new Transaction();
-        $TokenizingTransaction->setAccount($transaction->getAccount());
-        $TokenizingTransaction->setAmount(0);
-        $TokenizingTransaction->setCredentials($transaction->getCredentials());
-        $TokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
-        $TokenizingTransaction->setNetwork($transaction->getNetwork());
-        $TokenizingTransaction->setStatus($transaction->getStatus());
+    public function tokenizeAccount(AbstractAccount $account,array $options = []){
+        $options = $this->getResolver()->resolve($options);
+
+
+        $tokenizingTransaction = new Transaction();
+        $tokenizingTransaction->setAccount($account);
+        $tokenizingTransaction->setAmount(0);
+        $tokenizingTransaction->setCredentials($account->getCredentials());
+        $tokenizingTransaction->setType(new Transaction\TransactionType(Transaction\TransactionType::VALIDATE));
+
+        if($account instanceof  BankAccount){
+            $networkType = new Transaction\NetworkType(Transaction\NetworkType::ACH);
+        }elseif($account instanceof CardAccount){
+            $networkType = new Transaction\NetworkType(Transaction\NetworkType::CARD);
+        } else {
+            throw new \Exception('Account Type is missing');
+        }
+
+        $tokenizingTransaction->setNetwork($networkType);
+        $tokenizingTransaction->setStatus(new Result\ResultStatus(Result\ResultStatus::PENDING));
 
         $options['tokenize']=true;
 
-        $result = $this->doTransact($TokenizingTransaction,$options);
-        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
-        if(in_array($result->getStatus(),$BadJooJoo)){
-            return $result;
-        }
+        $result = $this->doTransact($tokenizingTransaction,$options);
+//        $BadJooJoo = [Result\ResultStatus::DECLINED,Result\ResultStatus::ERROR];
+//        if(in_array($result->getStatus(),$BadJooJoo)){
+//            return $result;
+//        }
         $data = $result->getData('response');
-        $TokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
-        $TokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
-        $options['tokenize']=false;
-        return $this->doTransact($transaction,$options);
+        return $data;
+
+//        $tokenizingTransaction->getAccount()->setAccountToken($data['customer_vault_id']);
+//        $tokenizingTransaction->getAccount()->setDateTokenized(new \DateTime());
+//
+//        return $tokenizingTransaction->getAccount();
 
     }
 
