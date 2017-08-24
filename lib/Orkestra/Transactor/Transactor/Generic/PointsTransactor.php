@@ -39,14 +39,6 @@ class PointsTransactor extends AbstractTransactor
         Transaction\TransactionType::REFUND,
     );
 
-    /**
-     * @param Transaction $transaction
-     * @param array $options
-     */
-    public function tokenizeAccount(Transaction $transaction,array $options = []){
-        $transaction->getAccount()->setAccountToken('Points');
-        $transaction->getAccount()->setDateTokenized(new \DateTime());
-    }
 
     /**
      * Transacts the given transaction

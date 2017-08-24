@@ -77,7 +77,7 @@ interface TransactorInterface
      *
      * @abstract
      * @param  AbstractAccount $account
-     * @param  array                                   $options
+     * @param  array $options
      * @return array
      */
     public function tokenizeAccount(AbstractAccount $account, array $options = array());

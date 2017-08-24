@@ -40,14 +40,6 @@ class GenericTransactor extends AbstractTransactor
     );
 
     /**
-     * @param Transaction $transaction
-     * @param array $options
-     */
-    public function tokenizeAccount(Transaction $transaction,array $options = []){
-        //Do nothing
-    }
-
-    /**
      * Transacts the given transaction
      *
      * @param \Orkestra\Transactor\Entity\Transaction $transaction
