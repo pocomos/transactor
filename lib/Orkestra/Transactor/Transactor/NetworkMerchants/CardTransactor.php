@@ -46,6 +46,7 @@ class CardTransactor extends AbstractTransactor
         Transaction\TransactionType::REFUND,
         Transaction\TransactionType::VOID,
         Transaction\TransactionType::CAPTURE,
+        Transaction\TransactionType::VALIDATE,
     );
 
     /**
