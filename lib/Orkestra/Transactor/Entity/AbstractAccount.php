@@ -44,7 +44,7 @@ abstract class AbstractAccount extends AbstractEntity
     /**
      * @var string
      *
-     * @ORM\Column(name="account_token", type="encrypted_string")
+     * @ORM\Column(name="account_token", type="string")
      */
     protected $accountToken = '';
 
