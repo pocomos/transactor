@@ -64,14 +64,27 @@ abstract class AbstractTransactor implements TransactorInterface
         $result = $transaction->getResult();
         $result->setTransactor($this);
 
+
         try {
-//            $options = $this->getResolver()->resolve($options);
-//            $account = $transaction->getAccount();
-//            if(!$account->getAccountToken()){
-//                $this->tokenizeAccount($transaction,$options);
-//            }
+            $options = $this->getResolver()->resolve($options);
+            $account = $transaction->getAccount();
+            // To Tokenize or Not To Tokenize, that is the question
+            $toTokenize = (!$account->getAccountToken() && $account->isTokenizeable());
+
+            if($toTokenize){
+                $options['tokenize'] = true;
+            }
 
             $this->doTransact($transaction, $options);
+
+            if($toTokenize){
+                if($result === ResultStatus::APPROVED){
+                    $data = $result->getData('response');
+                    if(!isset($data['customer_vault_id']) || $data['response'] != 1){
+                        $account->setAccountToken($data['customer_vault_id']);
+                    }
+                }
+            }
         } catch (\Exception $e) {
             $result->setStatus(new ResultStatus(ResultStatus::ERROR));
             $result->setMessage('An internal error occurred while processing the transaction.');
@@ -103,6 +116,10 @@ abstract class AbstractTransactor implements TransactorInterface
             $networkType = new Transaction\NetworkType(Transaction\NetworkType::CARD);
         } else {
             throw new \Exception('Account Type is missing');
+        }
+
+        if(!$account->isTokenizeable()){
+            throw new \Exception('This type of account is not tokenizeable');
         }
 
         $tokenizingTransaction->setNetwork($networkType);

@@ -49,6 +49,13 @@ abstract class AbstractAccount extends AbstractEntity
     protected $accountToken = '';
 
     /**
+     * @var \DateTime
+     *
+     * @ORM\Column(name="date_tokenized", type="datetime")
+     */
+    protected $dateTokenized;
+
+    /**
      * @var string
      *
      * @ORM\Column(name="last_four", type="string")
@@ -508,6 +515,16 @@ abstract class AbstractAccount extends AbstractEntity
     public function setDateTokenized(\DateTime $dateTokenized)
     {
         $this->dateTokenized = $dateTokenized;
+    }
+
+    /**
+     * Returns if the account can be tokenized.
+     * This is the default function. The idea is that you define which accountTypes you want to be tokenizable.
+     *
+     * @return bool
+     */
+    public function isTokenizeable(){
+        return false;
     }
 
 }

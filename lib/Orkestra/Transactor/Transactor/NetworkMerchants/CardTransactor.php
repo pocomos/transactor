@@ -101,6 +101,9 @@ class CardTransactor extends AbstractTransactor
             $result->setStatus(new Result\ResultStatus((!empty($data['response']) && '2' == $data['response']) ? Result\ResultStatus::DECLINED : Result\ResultStatus::ERROR));
             $result->setMessage(empty($data['responsetext']) ? 'An error occurred while processing the payment. Please try again.' : $data['responsetext']);
 
+            if($options['tokenize']){
+
+            }
             if (!empty($data['transactionid'])) {
                 $result->setExternalId($data['transactionid']);
             }

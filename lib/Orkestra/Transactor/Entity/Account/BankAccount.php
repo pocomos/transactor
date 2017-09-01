@@ -86,4 +86,14 @@ class BankAccount extends AbstractAccount
     {
         return 'Bank Account';
     }
+
+
+    /**
+     * Returns if the account can be tokenized.
+     *
+     * @return bool
+     */
+    public function isTokenizeable(){
+        return true;
+    }
 }

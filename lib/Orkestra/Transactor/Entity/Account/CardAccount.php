@@ -113,4 +113,13 @@ class CardAccount extends AbstractAccount
     {
         return 'Credit Card';
     }
+
+    /**
+     * Returns if the account can be tokenized.
+     *
+     * @return bool
+     */
+    public function isTokenizeable(){
+        return true;
+    }
 }
