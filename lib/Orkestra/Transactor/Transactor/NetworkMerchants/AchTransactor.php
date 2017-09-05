@@ -70,17 +70,21 @@ class AchTransactor extends CardTransactor
 
         $account = $transaction->getAccount();
 
+
         if (!$account || !$account instanceof BankAccount) {
             throw ValidationException::missingAccountInformation();
         }
 
-        if (null === $account->getAccountNumber()) {
-            throw ValidationException::missingRequiredParameter('account number');
-        } elseif (null === $account->getRoutingNumber()) {
-            throw ValidationException::missingRequiredParameter('routing number');
-        } elseif (null === $account->getAccountType()) {
-            throw ValidationException::missingRequiredParameter('account type');
+        if(!$account->getAccountToken()){
+            if (null === $account->getAccountNumber()) {
+                throw ValidationException::missingRequiredParameter('account number');
+            } elseif (null === $account->getRoutingNumber()) {
+                throw ValidationException::missingRequiredParameter('routing number');
+            } elseif (null === $account->getAccountType()) {
+                throw ValidationException::missingRequiredParameter('account type');
+            }
         }
+
     }
 
     /**
@@ -106,7 +110,9 @@ class AchTransactor extends CardTransactor
                 'transactionid' => $transaction->getParent()->getResult()->getExternalId(),
             ));
         } else {
+            $params['amount'] = $transaction->getAmount();
             $account = $transaction->getAccount();
+
             if($options['tokenize']){
                 $names = explode(' ', $account->getName(), 2);
                 $firstName = isset($names[0]) ? $names[0] : '';
@@ -138,9 +144,6 @@ class AchTransactor extends CardTransactor
                 ));
             } else {
                 $params['customer_vault_id'] = $account->getAccountToken();
-                $params['type']= $this->getNmiType($transaction);
-                $params['amount'] = $transaction->getAmount();
-
             }
 
         }
