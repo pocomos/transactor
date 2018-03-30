@@ -144,6 +144,7 @@ class Tokenizer extends AchTransactor
 
         $request = $client->post($postUrl)
             ->addPostFields($params);
+        $request->getCurlOptions()->set(CURLOPT_SSLVERSION, CURL_SSLVERSION_TLSv1_2);
 
         try {
             $response = $request->send();
