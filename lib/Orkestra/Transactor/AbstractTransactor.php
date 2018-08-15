@@ -82,6 +82,7 @@ abstract class AbstractTransactor implements TransactorInterface
                     $data = $result->getData('response');
                     if(isset($data['customer_vault_id']) && $data['response'] = 1){
                         $account->setAccountToken($data['customer_vault_id']);
+                        $account->setDateTokenized(new \DateTime());
                     }
                 }
             }
