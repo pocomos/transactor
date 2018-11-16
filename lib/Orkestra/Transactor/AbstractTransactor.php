@@ -68,22 +68,17 @@ abstract class AbstractTransactor implements TransactorInterface
         try {
             $options = $this->getResolver()->resolve($options);
             $account = $transaction->getAccount();
-            // To Tokenize or Not To Tokenize, that is the question
-            $toTokenize = (!$account->getAccountToken() && $account->isTokenizeable());
 
-            if($toTokenize){
-                $options['tokenize'] = true;
-            }
+            // To Tokenize or Not To Tokenize, that is the question
+            $options['tokenize'] = (!$account->getAccountToken() && $account->isTokenizeable());
 
             $this->doTransact($transaction, $options);
 
-            if($toTokenize){
-                if($result->getStatus() == ResultStatus::APPROVED){
-                    $data = $result->getData('response');
-                    if(isset($data['customer_vault_id']) && $data['response'] = 1){
-                        $account->setAccountToken($data['customer_vault_id']);
-                        $account->setDateTokenized(new \DateTime());
-                    }
+            if($options['tokenize'] && $result->getStatus() == ResultStatus::APPROVED){
+                $data = $result->getData('response');
+                if(isset($data['customer_vault_id']) && $data['response'] = 1){
+                    $account->setAccountToken($data['customer_vault_id']);
+                    $account->setDateTokenized(new \DateTime());
                 }
             }
         } catch (\Exception $e) {
@@ -172,7 +167,7 @@ abstract class AbstractTransactor implements TransactorInterface
 
     /**
      * Filter the given result
-     * 
+     *
      * @param Result $result
      *
      * @return Result

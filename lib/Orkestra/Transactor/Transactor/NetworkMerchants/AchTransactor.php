@@ -103,6 +103,11 @@ class AchTransactor extends CardTransactor
             'password' => $credentials->getCredential('password'),
         );
 
+        $transactionsDescription = $transaction->getDescription();
+        if($transactionsDescription !== null && strlen($transactionsDescription) > 3){
+            $params['order_description'] = $transactionsDescription;
+        }
+
         if (in_array($transaction->getType()->getValue(), array(
             Transaction\TransactionType::REFUND))
         ) {
@@ -117,7 +122,7 @@ class AchTransactor extends CardTransactor
                 $names = explode(' ', $account->getName(), 2);
                 $firstName = isset($names[0]) ? $names[0] : '';
                 $lastName = isset($names[1]) ? $names[1] : '';
-                $params['customer_vault'] = "add_customer";
+                $params['customer_vault'] = 'add_customer';
                 $params = array_merge($params, array(
                     'firstname' => $firstName,
                     'lastname' => $lastName,

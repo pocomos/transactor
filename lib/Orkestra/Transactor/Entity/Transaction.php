@@ -11,6 +11,7 @@
 
 namespace Orkestra\Transactor\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 use Orkestra\Common\Entity\AbstractEntity;
 
@@ -30,6 +31,13 @@ class Transaction extends AbstractEntity
      * @ORM\Column(name="amount", type="decimal", precision=12, scale=2)
      */
     protected $amount;
+
+    /**
+     * @var string $description
+     *
+     * @ORM\Column(name="description", type="string")
+     */
+    protected $description;
 
     /**
      * @var \Orkestra\Transactor\Entity\Transaction\TransactionType $type
@@ -110,7 +118,7 @@ class Transaction extends AbstractEntity
             $this->account = $parent->getAccount();
         }
 
-        $this->children = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->children = new ArrayCollection();
         $this->result = new Result($this);
     }
 
@@ -136,6 +144,22 @@ class Transaction extends AbstractEntity
         }
 
         $this->amount = $amount;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->description;
+    }
+
+    /**
+     * @param string $description
+     */
+    public function setDescription($description)
+    {
+        $this->description = $description;
     }
 
     /**

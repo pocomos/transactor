@@ -66,12 +66,10 @@ class CardTransactor extends AbstractTransactor
     }
 
     /**
-     * Transacts the given transaction
-     *
-     * @param \Orkestra\Transactor\Entity\Transaction $transaction
-     * @param array                                   $options
-     *
-     * @return \Orkestra\Transactor\Entity\Result
+     * @param Transaction $transaction
+     * @param array $options
+     * @return Result
+     * @throws ValidationException
      */
     protected function doTransact(Transaction $transaction, array $options = array())
     {
@@ -102,9 +100,6 @@ class CardTransactor extends AbstractTransactor
             $result->setStatus(new Result\ResultStatus((!empty($data['response']) && '2' == $data['response']) ? Result\ResultStatus::DECLINED : Result\ResultStatus::ERROR));
             $result->setMessage(empty($data['responsetext']) ? 'An error occurred while processing the payment. Please try again.' : $data['responsetext']);
 
-            if($options['tokenize']){
-
-            }
             if (!empty($data['transactionid'])) {
                 $result->setExternalId($data['transactionid']);
             }
@@ -200,11 +195,15 @@ class CardTransactor extends AbstractTransactor
             'username' => $credentials->getCredential('username'),
             'password' => $credentials->getCredential('password'),
         );
+        $transactionsDescription = $transaction->getDescription();
+        if($transactionsDescription !== null && strlen($transactionsDescription) > 3){
+            $params['order_description'] = $transactionsDescription;
+        }
 
         if (in_array($transaction->getType()->getValue(), array(
             Transaction\TransactionType::CAPTURE,
             Transaction\TransactionType::REFUND,
-            Transaction\TransactionType::VOID))
+            Transaction\TransactionType::VOID),false)
         ) {
             $params = array_merge($params, array(
                 'transactionid' => $transaction->getParent()->getResult()->getExternalId(),
@@ -213,7 +212,7 @@ class CardTransactor extends AbstractTransactor
             /** @var CardAccount $account */
             $account = $transaction->getAccount();
             if($options['tokenize']){
-                $params['customer_vault'] = "add_customer";
+                $params['customer_vault'] = 'add_customer';
                 $params = array_merge($params, array(
                     'ccnumber' => $account->getAccountNumber(),
                     'ccexp' => $account->getExpMonth()->getLongMonth() . $account->getExpYear()->getShortYear()
@@ -223,11 +222,11 @@ class CardTransactor extends AbstractTransactor
             }
 
 
-            if (isset($options['enable_cvv']) && true === $options['enable_cvv']) {
+            if (isset($options['enable_cvv']) && $options['enable_cvv'] === true) {
                 $params['cvv'] = $account->getCvv();
             }
 
-            if (isset($options['enable_avs']) && true === $options['enable_avs']) {
+            if (isset($options['enable_avs']) && $options['enable_avs'] === true ) {
                 $names = explode(' ', $account->getName(), 2);
                 $firstName = isset($names[0]) ? $names[0] : '';
                 $lastName = isset($names[1]) ? $names[1] : '';
