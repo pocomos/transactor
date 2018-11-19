@@ -35,7 +35,7 @@ class Transaction extends AbstractEntity
     /**
      * @var string $description
      *
-     * @ORM\Column(name="description", type="string")
+     * @ORM\Column(name="description", type="string", nullable=true)
      */
     protected $description;
 
